@@ -1,0 +1,36 @@
+{
+  "name": "cordova-plugin-networking-multipeer",
+  "version": "1.0.0",
+  "description": "Multipeer Connectivity Plugin for Cordova",
+  "cordova": {
+    "id": "cordova-plugin-networking-multipeer",
+    "platforms": [
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "hg",
+    "url": "https://bitbucket.org/bugnano/cordova-plugin-networking-multipeer"
+  },
+  "keywords": [
+    "cordova",
+    "multipeer",
+    "network",
+    "networking",
+    "connectivity",
+    "mp",
+    "mc",
+    "mpc",
+    "socket",
+    "client",
+    "server",
+    "multi",
+    "peer",
+    "p2p",
+    "ecosystem:cordova",
+    "cordova-ios"
+  ],
+  "author": "Franco Bugnano",
+  "license": "Apache 2.0"
+  "homepage": "https://bitbucket.org/bugnano/cordova-plugin-networking-multipeer#readme"
+}
