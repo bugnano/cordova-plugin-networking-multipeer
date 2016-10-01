@@ -49,24 +49,24 @@ import MultipeerConnectivity
 		self.invitationHandlers = [:]
 
 		// Init self.localPeerID
-		let myName = UIDevice.currentDevice().name
-		let defaults = NSUserDefaults.standardUserDefaults()
+		let myName = UIDevice.current.name
+		let defaults = UserDefaults.standard
 
 		// Use the stored peer id, as long as its display name matches the current one
-		if let peerIDData = defaults.dataForKey("kPeerIDKey"), let peerID = NSKeyedUnarchiver.unarchiveObjectWithData(peerIDData) as? MCPeerID where peerID.displayName == myName {
+		if let peerIDData = defaults.data(forKey: "kPeerIDKey"), let peerID = NSKeyedUnarchiver.unarchiveObject(with: peerIDData) as? MCPeerID, peerID.displayName == myName {
 			self.localPeerID = peerID
 		} else {
 			let peerID = MCPeerID(displayName: myName)
-			let peerIDData = NSKeyedArchiver.archivedDataWithRootObject(peerID)
+			let peerIDData = NSKeyedArchiver.archivedData(withRootObject: peerID)
 
-			defaults.setObject(peerIDData, forKey: "kPeerIDKey")
+			defaults.set(peerIDData, forKey: "kPeerIDKey")
 			defaults.synchronize()
 
 			self.localPeerID = peerID
 		}
 
 		// Init self.session
-		self.session = MCSession(peer: self.localPeerID, securityIdentity: nil, encryptionPreference: .Optional)
+		self.session = MCSession(peer: self.localPeerID, securityIdentity: nil, encryptionPreference: .optional)
 		session.delegate = self
 
 		// Init all the optionals to nil, just to be sure
@@ -94,50 +94,50 @@ import MultipeerConnectivity
 		self.session.disconnect()
 	}
 
-	func registerAdvertisingError(command: CDVInvokedUrlCommand) {
+	func registerAdvertisingError(_ command: CDVInvokedUrlCommand) {
 		self.idForAdvertisingError = command.callbackId
 	}
 
-	func registerBrowsingError(command: CDVInvokedUrlCommand) {
+	func registerBrowsingError(_ command: CDVInvokedUrlCommand) {
 		self.idForBrowsingError = command.callbackId
 	}
 
-	func registerFoundPeer(command: CDVInvokedUrlCommand) {
+	func registerFoundPeer(_ command: CDVInvokedUrlCommand) {
 		self.idForFoundPeer = command.callbackId
 	}
 
-	func registerLostPeer(command: CDVInvokedUrlCommand) {
+	func registerLostPeer(_ command: CDVInvokedUrlCommand) {
 		self.idForLostPeer = command.callbackId
 	}
 
-	func registerReceiveInvitation(command: CDVInvokedUrlCommand) {
+	func registerReceiveInvitation(_ command: CDVInvokedUrlCommand) {
 		self.idForReceiveInvitation = command.callbackId
 	}
 
-	func registerReceiveData(command: CDVInvokedUrlCommand) {
+	func registerReceiveData(_ command: CDVInvokedUrlCommand) {
 		self.idForReceiveData = command.callbackId
 	}
 
-	func registerChangeState(command: CDVInvokedUrlCommand) {
+	func registerChangeState(_ command: CDVInvokedUrlCommand) {
 		self.idForChangeState = command.callbackId
 	}
 
-	func getLocalPeerInfo(command: CDVInvokedUrlCommand) {
+	func getLocalPeerInfo(_ command: CDVInvokedUrlCommand) {
 		// Truncate the hash value to 32 bits, in order to have a comparable hash value
 		// on both 32-bit and 64-bit platforms
-		let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: [
+		let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: [
 			"id": 0,
 			"name": self.localPeerID.displayName,
-			"hash": NSNumber(unsignedInt: UInt32(truncatingBitPattern: self.localPeerID.hash)),
+			"hash": NSNumber(value: UInt32(truncatingBitPattern: self.localPeerID.hash)),
 		])
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func startAdvertising(command: CDVInvokedUrlCommand) {
+	func startAdvertising(_ command: CDVInvokedUrlCommand) {
 		let pluginResult: CDVPluginResult
 
-		if let serviceType = command.arguments[0] as? String where !serviceType.isEmpty {
+		if let serviceType = command.arguments[0] as? String, !serviceType.isEmpty {
 			self.serviceAdvertiser?.stopAdvertisingPeer()
 			// For some strange reason, MCNearbyServiceAdvertiser is not implemented as a failable initializer,
 			// so we cannot use the code
@@ -149,7 +149,7 @@ import MultipeerConnectivity
 			// In order to work-around this huge problem, we use the workaround found at:
 			// http://stackoverflow.com/questions/24710424/catch-an-exception-for-invalid-user-input-in-swift
 			do {
-				try TryCatch.tryBlock({
+				try TryCatch.try({
 					let advertiser = MCNearbyServiceAdvertiser(peer: self.localPeerID, discoveryInfo: nil, serviceType: serviceType)
 					self.serviceAdvertiser = advertiser
 					advertiser.delegate = self
@@ -165,26 +165,26 @@ import MultipeerConnectivity
 			pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR)
 		}
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func stopAdvertising(command: CDVInvokedUrlCommand) {
+	func stopAdvertising(_ command: CDVInvokedUrlCommand) {
 		self.serviceAdvertiser?.stopAdvertisingPeer()
 		self.serviceAdvertiser = nil
 
 		let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func startBrowsing(command: CDVInvokedUrlCommand) {
+	func startBrowsing(_ command: CDVInvokedUrlCommand) {
 		let pluginResult: CDVPluginResult
 
-		if let serviceType = command.arguments[0] as? String where !serviceType.isEmpty {
+		if let serviceType = command.arguments[0] as? String, !serviceType.isEmpty {
 			self.serviceBrowser?.stopBrowsingForPeers()
 			// The MCNearbyServiceBrowser has the same initialization problems as MCNearbyServiceAdvertiser
 			do {
-				try TryCatch.tryBlock({
+				try TryCatch.try({
 					let browser = MCNearbyServiceBrowser(peer: self.localPeerID, serviceType: serviceType)
 					self.serviceBrowser = browser
 					browser.delegate = self
@@ -200,81 +200,81 @@ import MultipeerConnectivity
 			pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR)
 		}
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func stopBrowsing(command: CDVInvokedUrlCommand) {
+	func stopBrowsing(_ command: CDVInvokedUrlCommand) {
 		self.serviceBrowser?.stopBrowsingForPeers()
 		self.serviceBrowser = nil
 
 		let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func invitePeer(command: CDVInvokedUrlCommand) {
+	func invitePeer(_ command: CDVInvokedUrlCommand) {
 		let pluginResult: CDVPluginResult
 
-		if let browser = self.serviceBrowser, let id = command.arguments[0] as? Int where self.knownPeers[id] != nil {
-			browser.invitePeer(self.knownPeers[id]!, toSession: self.session, withContext: nil, timeout: 0)
+		if let browser = self.serviceBrowser, let id = command.arguments[0] as? Int, self.knownPeers[id] != nil {
+			browser.invitePeer(self.knownPeers[id]!, to: self.session, withContext: nil, timeout: 0)
 
 			pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
 		} else {
 			pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR)
 		}
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func acceptInvitation(command: CDVInvokedUrlCommand) {
+	func acceptInvitation(_ command: CDVInvokedUrlCommand) {
 		self.handleInvitation(command, accept: true)
 	}
 
-	func declineInvitation(command: CDVInvokedUrlCommand) {
+	func declineInvitation(_ command: CDVInvokedUrlCommand) {
 		self.handleInvitation(command, accept: false)
 	}
 
-	func disconnect(command: CDVInvokedUrlCommand) {
+	func disconnect(_ command: CDVInvokedUrlCommand) {
 		self.session.disconnect()
 
 		let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK)
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func getConnectedPeers(command: CDVInvokedUrlCommand) {
+	func getConnectedPeers(_ command: CDVInvokedUrlCommand) {
 		var peers = [[String: AnyObject]]()
 
 		for peerID in self.session.connectedPeers {
 			peers.append([
-				"id": self.getIdForPeer(peerID),
-				"name": peerID.displayName,
-				"hash": NSNumber(unsignedInt: UInt32(truncatingBitPattern: peerID.hash)),
+				"id": NSNumber(value: self.getIdForPeer(peerID)),
+				"name": NSString(string: peerID.displayName),
+				"hash": NSNumber(value: UInt32(truncatingBitPattern: peerID.hash)),
 			])
 		}
 
-		let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsArray: peers)
+		let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: peers)
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	func sendDataReliable(command: CDVInvokedUrlCommand) {
-		self.sendData(command, withMode: .Reliable)
+	func sendDataReliable(_ command: CDVInvokedUrlCommand) {
+		self.sendData(command, withMode: .reliable)
 	}
 
-	func sendDataUnreliable(command: CDVInvokedUrlCommand) {
-		self.sendData(command, withMode: .Unreliable)
+	func sendDataUnreliable(_ command: CDVInvokedUrlCommand) {
+		self.sendData(command, withMode: .unreliable)
 	}
 
-	func advertiser(advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: NSError) {
+	func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didNotStartAdvertisingPeer error: Error) {
 		if let callbackId = self.idForAdvertisingError {
-			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsString: error.localizedDescription)
-			pluginResult.setKeepCallbackAsBool(true)
-			self.commandDelegate.sendPluginResult(pluginResult, callbackId: callbackId)
+			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: error.localizedDescription)
+			pluginResult?.setKeepCallbackAs(true)
+			self.commandDelegate.send(pluginResult, callbackId: callbackId)
 		}
 	}
 
-	func advertiser(advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: NSData?, invitationHandler: (Bool, MCSession) -> Void) {
+	func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
 		let id = self.getIdForPeer(peerID)
 
 		guard id != 0 else {
@@ -287,32 +287,32 @@ import MultipeerConnectivity
 		if let callbackId = self.idForReceiveInvitation {
 			// Store the invitation handler, in ordet to call it once the user has
 			// decided whether to accept or decline the invitation
-			let invitationId = self.nextInvitationId
+			let invitationId = self.nextInvitationId!
 			self.nextInvitationId! += 1
 			self.invitationHandlers[invitationId] = invitationHandler
 
 			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsMultipart: [[
 				"id": id,
 				"name": peerID.displayName,
-				"hash": NSNumber(unsignedInt: UInt32(truncatingBitPattern: peerID.hash)),
+				"hash": NSNumber(value: UInt32(truncatingBitPattern: peerID.hash)),
 			], invitationId])
-			pluginResult.setKeepCallbackAsBool(true)
-			self.commandDelegate.sendPluginResult(pluginResult, callbackId: callbackId)
+			pluginResult?.setKeepCallbackAs(true)
+			self.commandDelegate.send(pluginResult, callbackId: callbackId)
 		} else {
 			// Automatically decline the invitation
 			invitationHandler(false, self.session)
 		}
 	}
 
-	func browser(browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: NSError) {
+	func browser(_ browser: MCNearbyServiceBrowser, didNotStartBrowsingForPeers error: Error) {
 		if let callbackId = self.idForBrowsingError {
-			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsString: error.localizedDescription)
-			pluginResult.setKeepCallbackAsBool(true)
-			self.commandDelegate.sendPluginResult(pluginResult, callbackId: callbackId)
+			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: error.localizedDescription)
+			pluginResult?.setKeepCallbackAs(true)
+			self.commandDelegate.send(pluginResult, callbackId: callbackId)
 		}
 	}
 
-	func browser(browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
+	func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
 		let id = self.getIdForPeer(peerID)
 
 		guard id != 0 else {
@@ -321,17 +321,17 @@ import MultipeerConnectivity
 		}
 
 		if let callbackId = self.idForFoundPeer {
-			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: [
+			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: [
 				"id": id,
 				"name": peerID.displayName,
-				"hash": NSNumber(unsignedInt: UInt32(truncatingBitPattern: peerID.hash)),
+				"hash": NSNumber(value: UInt32(truncatingBitPattern: peerID.hash)),
 			])
-			pluginResult.setKeepCallbackAsBool(true)
-			self.commandDelegate.sendPluginResult(pluginResult, callbackId: callbackId)
+			pluginResult?.setKeepCallbackAs(true)
+			self.commandDelegate.send(pluginResult, callbackId: callbackId)
 		}
 	}
 
-	func browser(browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
+	func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
 		let id = self.getIdForPeer(peerID)
 
 		guard id != 0 else {
@@ -340,17 +340,17 @@ import MultipeerConnectivity
 		}
 
 		if let callbackId = self.idForLostPeer {
-			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsDictionary: [
+			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: [
 				"id": id,
 				"name": peerID.displayName,
-				"hash": NSNumber(unsignedInt: UInt32(truncatingBitPattern: peerID.hash)),
+				"hash": NSNumber(value: UInt32(truncatingBitPattern: peerID.hash)),
 			])
-			pluginResult.setKeepCallbackAsBool(true)
-			self.commandDelegate.sendPluginResult(pluginResult, callbackId: callbackId)
+			pluginResult?.setKeepCallbackAs(true)
+			self.commandDelegate.send(pluginResult, callbackId: callbackId)
 		}
 	}
 
-	func session(session: MCSession, didReceiveData data: NSData, fromPeer peerID: MCPeerID) {
+	func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
 		let id = self.getIdForPeer(peerID)
 
 		guard id != 0 else {
@@ -362,34 +362,34 @@ import MultipeerConnectivity
 			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsMultipart: [[
 				"id": id,
 				"name": peerID.displayName,
-				"hash": NSNumber(unsignedInt: UInt32(truncatingBitPattern: peerID.hash)),
+				"hash": NSNumber(value: UInt32(truncatingBitPattern: peerID.hash)),
 			], data])
-			pluginResult.setKeepCallbackAsBool(true)
-			self.commandDelegate.sendPluginResult(pluginResult, callbackId: callbackId)
+			pluginResult?.setKeepCallbackAs(true)
+			self.commandDelegate.send(pluginResult, callbackId: callbackId)
 		}
 	}
 
-	func session(session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, withProgress progress: NSProgress) {
+	func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {
 	}
 
-	func session(session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, atURL localURL: NSURL, withError error: NSError?) {
+	func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL, withError error: Error?) {
 	}
 
-	func session(session: MCSession, didReceiveStream stream: NSInputStream, withName streamName: String, fromPeer peerID: MCPeerID) {
+	func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {
 	}
 
-	func session(session: MCSession, peer peerID: MCPeerID, didChangeState state: MCSessionState) {
+	func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
 		let id = self.getIdForPeer(peerID)
 		let strState: String
 
 		switch state {
-			case .NotConnected:
+			case .notConnected:
 				strState = "NotConnected"
 
-			case .Connecting:
+			case .connecting:
 				strState = "Connecting"
 
-			case .Connected:
+			case .connected:
 				strState = "Connected"
 		}
 
@@ -397,20 +397,19 @@ import MultipeerConnectivity
 			let pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsMultipart: [[
 				"id": id,
 				"name": peerID.displayName,
-				"hash": NSNumber(unsignedInt: UInt32(truncatingBitPattern: peerID.hash)),
+				"hash": NSNumber(value: UInt32(truncatingBitPattern: peerID.hash)),
 			], strState])
-			pluginResult.setKeepCallbackAsBool(true)
-			self.commandDelegate.sendPluginResult(pluginResult, callbackId: callbackId)
+			pluginResult?.setKeepCallbackAs(true)
+			self.commandDelegate.send(pluginResult, callbackId: callbackId)
 		}
 	}
 
-	func session(session: MCSession, didReceiveCertificate certificate: [AnyObject]?, fromPeer peerID: MCPeerID, certificateHandler: (Bool) -> Void) {
+	func session(_ session: MCSession, didReceiveCertificate certificate: [Any]?, fromPeer peerID: MCPeerID, certificateHandler: @escaping (Bool) -> Void) {
 		// Automatically accept all certificates
 		certificateHandler(true)
 	}
 
-	//func getIdForPeer(_ peerID: MCPeerID) -> Int {
-	func getIdForPeer(peerID: MCPeerID) -> Int {
+	func getIdForPeer(_ peerID: MCPeerID) -> Int {
 		let id: Int
 
 		// the local peer id maps to 0
@@ -418,10 +417,7 @@ import MultipeerConnectivity
 			return 0
 		}
 
-		//if let (k, _) = self.knownPeers.first(where: { $1 == peerID }) {
-		if let i = self.knownPeers.indexOf({ $1 == peerID }) {
-			let (k, _) = self.knownPeers[i]
-
+		if let (k, _) = self.knownPeers.first(where: { $1 == peerID }) {
 			// The peer is already known
 			id = k
 		} else {
@@ -436,11 +432,10 @@ import MultipeerConnectivity
 		return id
 	}
 
-	//func handleInvitation(_ command: CDVInvokedUrlCommand, accept: Bool) {
-	func handleInvitation(command: CDVInvokedUrlCommand, accept: Bool) {
+	func handleInvitation(_ command: CDVInvokedUrlCommand, accept: Bool) {
 		let pluginResult: CDVPluginResult
 
-		if let invitationId = command.arguments[0] as? Int where self.invitationHandlers[invitationId] != nil {
+		if let invitationId = command.arguments[0] as? Int, self.invitationHandlers[invitationId] != nil {
 			self.invitationHandlers[invitationId]!(accept, self.session)
 			self.invitationHandlers[invitationId] = nil
 
@@ -449,15 +444,14 @@ import MultipeerConnectivity
 			pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR)
 		}
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 
-	//func sendData(_ command: CDVInvokedUrlCommand, withMode mode: MCSessionSendDataMode) {
-	func sendData(command: CDVInvokedUrlCommand, withMode mode: MCSessionSendDataMode) {
+	func sendData(_ command: CDVInvokedUrlCommand, withMode mode: MCSessionSendDataMode) {
 		let pluginResult: CDVPluginResult
 		var peerIDs = [MCPeerID]()
 
-		if let peers = command.arguments[0] as? [AnyObject], let data = command.arguments[1] as? NSData {
+		if let peers = command.arguments[0] as? [AnyObject], let data = command.arguments[1] as? Data {
 			// Convert the numeric peer ids to MCPeerID
 			for peer in peers {
 				if let id = peer as? Int, let knownPeer = self.knownPeers[id] {
@@ -468,20 +462,20 @@ import MultipeerConnectivity
 			// If the arrays are of the same size, it means that all the peer ids are correct
 			if peerIDs.count == peers.count {
 				do {
-					try self.session.sendData(data, toPeers: peerIDs, withMode: mode)
+					try self.session.send(data, toPeers: peerIDs, with: mode)
 
-					pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAsNSInteger: data.length)
+					pluginResult = CDVPluginResult(status: CDVCommandStatus_OK, messageAs: data.count)
 				} catch let error as NSError {
-					pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsString: error.localizedDescription)
+					pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: error.localizedDescription)
 				}
 			} else {
-				pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsString: "Invalid peer ids")
+				pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid peer ids")
 			}
 		} else {
-			pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAsString: "Invalid arguments")
+			pluginResult = CDVPluginResult(status: CDVCommandStatus_ERROR, messageAs: "Invalid arguments")
 		}
 
-		self.commandDelegate.sendPluginResult(pluginResult, callbackId: command.callbackId)
+		self.commandDelegate.send(pluginResult, callbackId: command.callbackId)
 	}
 }
 
