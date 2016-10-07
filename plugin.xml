@@ -15,7 +15,7 @@
   limitations under the License.
 -->
 
-<plugin id="cordova-plugin-networking-multipeer" version="1.0.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<plugin id="cordova-plugin-networking-multipeer" version="1.1.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
 	<name>Multipeer Networking</name>
 	<description>Multipeer Connectivity Plugin for Cordova</description>
 	<author>Franco Bugnano</author>
@@ -37,7 +37,7 @@
 		<source-file src="src/ios/NetworkingMultipeer.swift" />
 		<header-file src="src/ios/TryCatch.h" />
 		<source-file src="src/ios/TryCatch.m" />
-		<dependency id="cordova-plugin-add-swift-support" version="1.3.1" />
+		<dependency id="cordova-plugin-add-swift-support" version="1.4.0" />
 	</platform>
 </plugin>
 

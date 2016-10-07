@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-networking-multipeer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Multipeer Connectivity Plugin for Cordova",
   "cordova": {
     "id": "cordova-plugin-networking-multipeer",
